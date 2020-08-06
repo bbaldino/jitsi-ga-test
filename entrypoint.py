@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 import json
+import os
+import sys
 
 if __name__ == "__main__":
     GITHUB_EVENT_PATH = os.environ["GITHUB_EVENT_PATH"]
