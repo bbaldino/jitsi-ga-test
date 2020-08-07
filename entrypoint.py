@@ -5,7 +5,7 @@ import os
 import sys
 
 def error(msg: str) -> None:
-    print(f"[error]: {msg}"
+    print(f"[error]: {msg}")
 
 def info(msg: str) -> None:
     print(f"[info]: {msg}")
@@ -17,7 +17,7 @@ if __name__ == "__main__":
         event = json.load(event_info_file)
 
     info("loaded event info: %s" % event)
-    pr_comment = event.get("issue", default={}).get("pull_request", default=None)
+    pr_comment = event.get("issue", {}).get("pull_request", None)
     if pr_comment == None:
         info("Event is not a PR comment")
         # TODO: this should just be a 'quit', not a fail or success.  Is this right?
