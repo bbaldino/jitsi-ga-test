@@ -66,7 +66,6 @@ if __name__ == "__main__":
             info(f"invalid line: {err}")
 
     checkout_overridden_components(overridden_components)
-    for root, dirs, files in os.walk("./component_overrides"):
-        for filename in files:
-            print(filename)
+    os.listdir(".")
+    os.listdir("./component_overrides")
 
