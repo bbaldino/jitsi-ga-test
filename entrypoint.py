@@ -66,7 +66,8 @@ def build_components(overridden_components):
         overridden_versions["jitsi-utils"] = jitsi_utils_version
     # others....
     if "jitsi-videobridge" in overridden_components:
-        pass
+        info("Building jitsi-videobridge")
+        build_component("jitsi-videobridge", overridden_versions)
 
 if __name__ == "__main__":
     GITHUB_EVENT_PATH = os.environ["GITHUB_EVENT_PATH"]
