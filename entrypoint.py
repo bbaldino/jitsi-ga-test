@@ -62,7 +62,7 @@ def build_components(overridden_components):
     overridden_versions = dict()
     if "jitsi-utils" in overridden_components:
         info("Building jitsi-utils")
-        jitsi_utils_version = build_component("jitsi-utils")
+        jitsi_utils_version = build_component("jitsi-utils", overridden_versions)
         overridden_versions["jitsi-utils"] = jitsi_utils_version
     # others....
     if "jitsi-videobridge" in overridden_components:
