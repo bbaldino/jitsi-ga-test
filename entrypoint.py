@@ -37,6 +37,7 @@ def update_maven_deps(overridden_versions, component_dir: str) -> None:
         info(f"Running command: {cmd}")
         result = subprocess.run(cmd)
         info(f"Substitution command ran with result {result.returncode}")
+        info(f"Running git diff in {component_dir} to see changes")
         subprocess.run(["git", "diff"], cwd=component_dir)
 
 def get_component_version(component_dir: str) -> str:
