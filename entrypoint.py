@@ -31,7 +31,7 @@ def update_maven_deps(overridden_versions, component_dir: str) -> None:
         cmd = [
             "xmlstarlet", "ed", "--inplace",
             "-u", f"/_:project/_:dependencies/_:dependency[_:artifactId='{component_name}']/_:version' -v {component_version}",
-            "-u", f"/_:project/_:dependencyManagement/_:dependencies/_:dependency[_:artifactId='{component_name']/_:version' -v {component_version}",
+            "-u", f"/_:project/_:dependencyManagement/_:dependencies/_:dependency[_:artifactId='{component_name}']/_:version' -v {component_version}",
             os.path.join(component_dir, "pom.xml")
         ]
         info(f"Running command: {cmd}")
