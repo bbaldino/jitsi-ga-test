@@ -14,11 +14,11 @@ def info(msg: str) -> None:
     print(f"[info]: {msg}")
 
 def checkout_component(component_name, repo, branch_name, checkout_dir):
+    info(f"Checking out branch '{branch_name}' from repo '{repo}' for component '{component_name}'")
     git.Repo.clone_from(f"https://github.com/{repo}.git", os.path.join(checkout_dir, component_name), branch=branch_name, depth=1)
 
 def checkout_overridden_components(overridden_components):
     for (component, (repo, branch)) in overridden_components.items():
-        info(f"Will use branch {branch} from repo {repo} for component {component}")
         checkout_component(component, repo, branch, ".")
 
 def get_component_version(component_dir):
@@ -32,6 +32,7 @@ def build_component(component_dir):
     info(f"Running command {cmd}")
     result = subprocess.run(cmd)
     info(f"Build finished with return code {result.returncode}")
+    get_component_version(component_dir)
 
 # Build the component for this PR, but first build any other overridden components
 # and use them.  We need to build the components in a specific order such that
