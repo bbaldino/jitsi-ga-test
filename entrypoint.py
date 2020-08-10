@@ -46,7 +46,7 @@ def get_component_version(component_dir: str) -> str:
     return version
 
 def build_component(component_dir: str, overridden_versions) -> str:
-    update_maven_deps(overridden_components, component_dir)
+    update_maven_deps(overridden_versions, component_dir)
     cmd = ["mvn", "-f", os.path.join(component_dir, "pom.xml"), "install", "-D", "skipTests"]
     info(f"Running command {cmd}")
     result = subprocess.run(cmd)
