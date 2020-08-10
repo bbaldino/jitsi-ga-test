@@ -89,7 +89,7 @@ if __name__ == "__main__":
     # TEMP - hard code comment body to test
     comment_body = """deps:
     use jitsi-utils bbaldino/jitsi-utils outcome
-    use jitsi-videobridge bbaldino/jitsi-videobridge master
+    use jitsi-videobridge jitsi/jitsi-videobridge master
     """
     # END TEMP
 
