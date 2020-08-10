@@ -5,7 +5,7 @@ FROM maven:3.6.3-jdk-8-alpine
 COPY entrypoint.py .
 COPY requirements.txt .
 
-RUN apk add --no-cache git python3
+RUN apk add --no-cache git python3 xmlstarlet
 RUN pip3 install --no-cache-dir -r requirements.txt
 
 # Code file to execute when the docker container starts up (`entrypoint.sh`)

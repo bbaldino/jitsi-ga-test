@@ -2,6 +2,7 @@
 
 import json
 import os
+import subprocess
 import sys
 
 import git
@@ -12,15 +13,36 @@ def error(msg: str) -> None:
 def info(msg: str) -> None:
     print(f"[info]: {msg}")
 
-# check these out to 'overrides/'
 def checkout_component(component_name, repo, branch_name, checkout_dir):
     git.Repo.clone_from(f"https://github.com/{repo}.git", os.path.join(checkout_dir, component_name), branch=branch_name, depth=1)
 
 def checkout_overridden_components(overridden_components):
-    os.mkdir("component_overrides")
     for (component, (repo, branch)) in overridden_components.items():
-        print(f"Will use branch {branch} from repo {repo} for component {component}")
-        checkout_component(component, repo, branch, "component_overrides")
+        info(f"Will use branch {branch} from repo {repo} for component {component}")
+        checkout_component(component, repo, branch, ".")
+
+def get_component_version(component_dir):
+    cmd = ["xmlstarlet", "sel", "-t", "-v", "/_:project/_:version", os.path.join(component_dir, "pom.xml")]
+    info(f"Getting component version, running command {cmd}")
+    version = subprocess.check_output(cmd)
+    info(f"Got version for component {component_dir}: {version}")
+
+def build_component(component_dir):
+    cmd = ["mvn", "-f", os.path.join(component_dir, "pom.xml"), "install", "-D", "skipTests"]
+    info(f"Running command {cmd}")
+    result = subprocess.Popen(cmd)
+    info(f"Build finished with return code {result.returncode}")
+
+# Build the component for this PR, but first build any other overridden components
+# and use them.  We need to build the components in a specific order such that
+# dependencies are built before the components that use them
+def build_components(overridden_components):
+    if "jitsi-utils" in overridden_components:
+        info("Building jitsi-utils")
+        build_component("jitsi-utils")
+    # others....
+    if "jitsi-videobridge" in overridden_components:
+        pass
 
 if __name__ == "__main__":
     GITHUB_EVENT_PATH = os.environ["GITHUB_EVENT_PATH"]
@@ -39,7 +61,7 @@ if __name__ == "__main__":
     info(f"Parsed comment body '{comment_body}'")
     # TEMP - hard code comment body to test
     comment_body = """deps:
-    use jitsi-videobridge bbaldino/jitsi-videobridge jetty_activator
+    use jitsi-utils bbaldino/jitsi-utils outcome
     """
     # END TEMP
 
@@ -67,5 +89,14 @@ if __name__ == "__main__":
 
     checkout_overridden_components(overridden_components)
     print(os.listdir("."))
-    print(os.listdir("./component_overrides"))
+    print(os.listdir("./jitsi-utils"))
+    build_component("jitsi-utils")
+    # We need to:
+    # build and install all components, in a specific order.  For now we'll support the jvb path, so this
+    #   order should work:
+    #   1) jitsi-utils
+    #   2) jicoco
+    #   3) rtp
+    #   4) jmt
+    #   5) jvb
 
