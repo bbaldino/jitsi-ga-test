@@ -37,6 +37,7 @@ def update_maven_deps(overridden_versions, component_dir: str) -> None:
         info(f"Running command: {cmd}")
         result = subprocess.run(cmd)
         info(f"Substitution command ran with result {result.returncode}")
+        subprocess.run(["git", "diff"], cwd=component_dir)
 
 def get_component_version(component_dir: str) -> str:
     cmd = ["xmlstarlet", "sel", "-t", "-v", "/_:project/_:version", os.path.join(component_dir, "pom.xml")]
@@ -62,12 +63,12 @@ def build_components(overridden_components):
     overridden_versions = dict()
     if "jitsi-utils" in overridden_components:
         info("Building jitsi-utils")
-        jitsi_utils_version = build_component("jitsi-utils", overridden_versions)
+        jitsi_utils_version = build_component("./jitsi-utils", overridden_versions)
         overridden_versions["jitsi-utils"] = jitsi_utils_version
     # others....
     if "jitsi-videobridge" in overridden_components:
         info("Building jitsi-videobridge")
-        build_component("jitsi-videobridge", overridden_versions)
+        build_component("./jitsi-videobridge", overridden_versions)
 
 if __name__ == "__main__":
     GITHUB_EVENT_PATH = os.environ["GITHUB_EVENT_PATH"]
