@@ -51,7 +51,7 @@ def build_component(component_dir: str, overridden_versions) -> str:
     info(f"Running command {cmd}")
     result = subprocess.run(cmd)
     info(f"Build finished with return code {result.returncode}")
-    if result.returncode !== 0:
+    if result.returncode != 0:
         fail(f"Error building {component_dir}")
     return get_component_version(component_dir)
 
