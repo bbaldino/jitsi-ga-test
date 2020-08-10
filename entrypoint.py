@@ -26,7 +26,7 @@ def checkout_overridden_components(overridden_components):
         checkout_component(component, repo, branch, ".")
 
 def update_maven_deps(overridden_versions, component_dir: str) -> None:
-    for (component_name, component_version) in overridden_versions:
+    for (component_name, component_version) in overridden_versions.items():
         info(f"Setting {component_name} version in {component_dir} to {component_version}")
         cmd = [
             "xmlstarlet", "ed", "--inplace",
