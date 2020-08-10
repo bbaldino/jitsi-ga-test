@@ -30,8 +30,8 @@ def update_maven_deps(overridden_versions, component_dir: str) -> None:
         info(f"Setting {component_name} version in {component_dir} to {component_version}")
         cmd = [
             "xmlstarlet", "ed", "--inplace",
-            "-u", f"/_:project/_:dependencies/_:dependency[_:artifactId='{component_name}']/_:version' -v {component_version}",
-            "-u", f"/_:project/_:dependencyManagement/_:dependencies/_:dependency[_:artifactId='{component_name}']/_:version' -v {component_version}",
+            "-u", f"/_:project/_:dependencies/_:dependency[_:artifactId='{component_name}']/_:version", "-v", "{component_version}",
+            "-u", f"/_:project/_:dependencyManagement/_:dependencies/_:dependency[_:artifactId='{component_name}']/_:version", "-v", "{component_version}",
             os.path.join(component_dir, "pom.xml")
         ]
         info(f"Running command: {cmd}")
@@ -43,7 +43,7 @@ def update_maven_deps(overridden_versions, component_dir: str) -> None:
 def get_component_version(component_dir: str) -> str:
     cmd = ["xmlstarlet", "sel", "-t", "-v", "/_:project/_:version", os.path.join(component_dir, "pom.xml")]
     info(f"Getting component version, running command {cmd}")
-    version = subprocess.check_output(cmd)
+    version = subprocess.check_output(cmd).decode(sys.stdout.encoding)
     info(f"Got version for component {component_dir}: {version}")
     return version
 
