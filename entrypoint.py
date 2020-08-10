@@ -30,7 +30,7 @@ def get_component_version(component_dir):
 def build_component(component_dir):
     cmd = ["mvn", "-f", os.path.join(component_dir, "pom.xml"), "install", "-D", "skipTests"]
     info(f"Running command {cmd}")
-    result = subprocess.Popen(cmd)
+    result = subprocess.run(cmd)
     info(f"Build finished with return code {result.returncode}")
 
 # Build the component for this PR, but first build any other overridden components
