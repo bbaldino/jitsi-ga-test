@@ -1,5 +1,5 @@
 # Container image that runs your code
-FROM maven:3.6.3-jdk-8-slim
+FROM maven:3.6.3-jdk-8
 
 # Copies your code file from your action repository to the filesystem path `/` of the container
 COPY entrypoint.py .
