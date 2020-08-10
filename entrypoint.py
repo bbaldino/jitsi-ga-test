@@ -13,6 +13,10 @@ def error(msg: str) -> None:
 def info(msg: str) -> None:
     print(f"[info]: {msg}")
 
+def fail(msg: str) -> None:
+    error(msg)
+    sys.exit(1)
+
 def checkout_component(component_name, repo, branch_name, checkout_dir):
     info(f"Checking out branch '{branch_name}' from repo '{repo}' for component '{component_name}'")
     git.Repo.clone_from(f"https://github.com/{repo}.git", os.path.join(checkout_dir, component_name), branch=branch_name, depth=1)
@@ -21,26 +25,45 @@ def checkout_overridden_components(overridden_components):
     for (component, (repo, branch)) in overridden_components.items():
         checkout_component(component, repo, branch, ".")
 
-def get_component_version(component_dir):
+def update_maven_deps(overridden_versions, component_dir: str) -> None:
+    for (component_name, component_version) in overridden_versions:
+        info(f"Setting {component_name} version in {component_dir} to {component_version}")
+        cmd = [
+            "xmlstarlet", "ed", "--inplace",
+            "-u", f"/_:project/_:dependencies/_:dependency[_:artifactId='{component_name}']/_:version' -v {component_version}",
+            "-u", f"/_:project/_:dependencyManagement/_:dependencies/_:dependency[_:artifactId='{component_name']/_:version' -v {component_version}",
+            os.path.join(component_dir, "pom.xml")
+        ]
+        info(f"Running command: {cmd}")
+        result = subprocess.run(cmd)
+        info(f"Substitution command ran with result {result.returncode}")
+
+def get_component_version(component_dir: str) -> str:
     cmd = ["xmlstarlet", "sel", "-t", "-v", "/_:project/_:version", os.path.join(component_dir, "pom.xml")]
     info(f"Getting component version, running command {cmd}")
     version = subprocess.check_output(cmd)
     info(f"Got version for component {component_dir}: {version}")
+    return version
 
-def build_component(component_dir):
+def build_component(component_dir: str, overridden_versions) -> str:
+    update_mvn_deps(overridden_components, component_dir)
     cmd = ["mvn", "-f", os.path.join(component_dir, "pom.xml"), "install", "-D", "skipTests"]
     info(f"Running command {cmd}")
     result = subprocess.run(cmd)
     info(f"Build finished with return code {result.returncode}")
-    get_component_version(component_dir)
+    if result.returncode !== 0:
+        fail(f"Error building {component_dir}")
+    return get_component_version(component_dir)
 
 # Build the component for this PR, but first build any other overridden components
 # and use them.  We need to build the components in a specific order such that
 # dependencies are built before the components that use them
 def build_components(overridden_components):
+    overridden_versions = dict()
     if "jitsi-utils" in overridden_components:
         info("Building jitsi-utils")
-        build_component("jitsi-utils")
+        jitsi_utils_version = build_component("jitsi-utils")
+        overridden_versions["jitsi-utils"] = jitsi_utils_version
     # others....
     if "jitsi-videobridge" in overridden_components:
         pass
@@ -63,6 +86,7 @@ if __name__ == "__main__":
     # TEMP - hard code comment body to test
     comment_body = """deps:
     use jitsi-utils bbaldino/jitsi-utils outcome
+    use jitsi-videobridge bbaldino/jitsi-videobridge master
     """
     # END TEMP
 
