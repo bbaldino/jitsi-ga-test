@@ -6,6 +6,7 @@ import subprocess
 import sys
 
 import git
+from contextlib import redirect_stdout
 
 def error(msg: str) -> None:
     print(f"[error]: {msg}")
@@ -48,19 +49,22 @@ def get_component_version(component_dir: str) -> str:
     return version
 
 def build_component(component_dir: str, overridden_versions) -> str:
-    update_maven_deps(overridden_versions, component_dir)
-    cmd = ["mvn", "-f", os.path.join(component_dir, "pom.xml"), "install", "-D", "skipTests"]
-    info(f"Running command {cmd}")
-    result = subprocess.run(cmd)
-    info(f"Build finished with return code {result.returncode}")
-    if result.returncode != 0:
-        fail(f"Error building {component_dir}")
-    return get_component_version(component_dir)
+    with open(f"logs/{component_dir}.log", "w") as f:
+        with redirect_stdout(f):
+            update_maven_deps(overridden_versions, component_dir)
+            cmd = ["mvn", "-f", os.path.join(component_dir, "pom.xml"), "install", "-D", "skipTests"]
+            info(f"Running command {cmd}")
+            result = subprocess.run(cmd)
+            info(f"Build finished with return code {result.returncode}")
+            if result.returncode != 0:
+                fail(f"Error building {component_dir}")
+            return get_component_version(component_dir)
 
 # Build the component for this PR, but first build any other overridden components
 # and use them.  We need to build the components in a specific order such that
 # dependencies are built before the components that use them
 def build_components(overridden_components):
+    os.mkdir("logs")
     overridden_versions = dict()
     if "jitsi-utils" in overridden_components:
         info("Building jitsi-utils")
