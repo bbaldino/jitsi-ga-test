@@ -36,7 +36,7 @@ def update_maven_deps(overridden_versions, component_dir: str) -> None:
             os.path.join(component_dir, "pom.xml")
         ]
         info(f"Running command: {cmd}")
-        result = subprocess.run(cmd)
+        result = subprocess.run(cmd, stdout=sys.stdout)
         info(f"Substitution command ran with result {result.returncode}")
         info(f"Running git diff in {component_dir} to see changes")
         info(subprocess.check_output(["git", "diff"], cwd=component_dir).decode(sys.stdout.encoding))
@@ -54,7 +54,7 @@ def build_component(component_dir: str, overridden_versions) -> str:
             update_maven_deps(overridden_versions, component_dir)
             cmd = ["mvn", "-f", os.path.join(component_dir, "pom.xml"), "install", "-D", "skipTests"]
             info(f"Running command {cmd}")
-            result = subprocess.run(cmd)
+            result = subprocess.run(cmd, stdout=sys.stdout)
             info(f"Build finished with return code {result.returncode}")
             if result.returncode != 0:
                 fail(f"Error building {component_dir}")
