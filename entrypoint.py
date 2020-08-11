@@ -92,7 +92,7 @@ if __name__ == "__main__":
     info(f"Parsed comment body '{comment_body}'")
     # TEMP - hard code comment body to test
     comment_body = """deps:
-    use jitsi-utils bbaldino/jitsi-utils outcome
+    use jitsi-utils jitsi/jitsi-utils master
     use jitsi-videobridge jitsi/jitsi-videobridge master
     """
     # END TEMP
