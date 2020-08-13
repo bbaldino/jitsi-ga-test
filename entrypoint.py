@@ -5,8 +5,9 @@ import os
 import subprocess
 import sys
 
-import git
 from contextlib import redirect_stdout
+import git
+import requests
 
 def error(msg: str) -> None:
     print(f"[error]: {msg}", flush=True)
@@ -75,13 +76,51 @@ def build_components(overridden_components):
         info("Building jitsi-videobridge")
         build_component("./jitsi-videobridge", overridden_versions)
 
+
+def load_pr(url: str) -> dict:
+    info("Retrieving PR information")
+    pr_resp = requests.get(
+        url,
+        headers={
+            **GH_REQUEST_HEADERS,
+            # TODO: needed?
+            "Accept": "application/vnd.github.shadow-cat-preview+json, application/vnd.github.sailor-v-preview+json",
+        }
+    )
+    pr_resp.raise_for_status()
+    return pr_resp.json()
+
+def get_pr_comments(url: str) -> dict:
+    info("Retrieving PR comments")
+    comments_resp = requests.get(
+        url,
+        headers={
+            **GH_REQUEST_HEADERS,
+            # TODO: need accept type?
+        }
+    )
+    comments_resp.raise_for_status()
+    return comments_resp.json()
+
 if __name__ == "__main__":
     GITHUB_EVENT_PATH = os.environ["GITHUB_EVENT_PATH"]
+    GITHUB_TOKEN = os.environ["GITHUB_TOKEN"]
 
     with open(GITHUB_EVENT_PATH) as event_info_file:
         event = json.load(event_info_file)
 
-    info("loaded event info: %s" % event)
+    info(f"loaded event info: {json.dumps(event)}")
+
+    GH_REQUEST_HEADERS = {
+        "Authorization": f"Bearer {GITHUB_TOKEN}",
+        "Content-Type": "application/json"
+    }
+
+    pr = load_pr(event["issue"]["pull_request"]["url"])
+    comments_url = pr["comments_url"]
+    comments = get_pr_comments(comments_url)
+    info(f"got comments {json.dumps(comments)}")
+
     pr_comment = event.get("issue", {}).get("pull_request", None)
     if pr_comment == None:
         info("Event is not a PR comment")
