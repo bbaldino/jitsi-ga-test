@@ -150,8 +150,6 @@ if __name__ == "__main__":
             info(f"invalid line: {err}")
 
     checkout_overridden_components(overridden_components)
-    print(os.listdir("."))
-    print(os.listdir("./jitsi-utils"))
     build_components(overridden_components)
     # We need to:
     # build and install all components, in a specific order.  For now we'll support the jvb path, so this
