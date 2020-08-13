@@ -9,10 +9,10 @@ import git
 from contextlib import redirect_stdout
 
 def error(msg: str) -> None:
-    print(f"[error]: {msg}")
+    print(f"[error]: {msg}", flush=True)
 
 def info(msg: str) -> None:
-    print(f"[info]: {msg}")
+    print(f"[info]: {msg}", flush=True)
 
 def fail(msg: str) -> None:
     error(msg)
