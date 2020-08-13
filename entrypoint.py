@@ -39,7 +39,7 @@ def update_maven_deps(overridden_versions, component_dir: str) -> None:
         result = subprocess.run(cmd, stdout=sys.stdout)
         info(f"Substitution command ran with result {result.returncode}")
         info(f"Running git diff in {component_dir} to see changes")
-        info(subprocess.check_output(["git", "diff"], cwd=component_dir).decode(sys.stdout.encoding))
+        info(subprocess.check_output(["git", "diff", "-w"], cwd=component_dir).decode(sys.stdout.encoding))
 
 def get_component_version(component_dir: str) -> str:
     cmd = ["xmlstarlet", "sel", "-t", "-v", "/_:project/_:version", os.path.join(component_dir, "pom.xml")]
