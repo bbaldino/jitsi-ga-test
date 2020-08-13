@@ -102,6 +102,16 @@ def get_pr_comments(url: str) -> dict:
     comments_resp.raise_for_status()
     return comments_resp.json()
 
+def retrieve_pr_comments(event: dict) -> dict:
+    if event["action"] == "synchronize":
+        return get_pr_comments(event["pull_request"]["_links"]["comments"]["href"])
+    elif event["action"] == "edited":
+        pr = load_pr(event["issue"]["pull_request"]["url"])
+        return get_pr_comments(pr["comments_url"])
+    else:
+        info("Unhandled event action type: {}".format(event["action"]))
+        return dict()
+
 if __name__ == "__main__":
     GITHUB_EVENT_PATH = os.environ["GITHUB_EVENT_PATH"]
     GITHUB_TOKEN = os.environ["GITHUB_TOKEN"]
@@ -116,9 +126,7 @@ if __name__ == "__main__":
         "Content-Type": "application/json"
     }
 
-    pr = load_pr(event["issue"]["pull_request"]["url"])
-    comments_url = pr["comments_url"]
-    comments = get_pr_comments(comments_url)
+    comments = retrieve_pr_comments(event)
     info(f"got comments {json.dumps(comments)}")
 
     deps_comment = next((comment for comment in comments if comment["author_association"] == "OWNER" and comment["body"].startswith("deps:")), "")
@@ -130,8 +138,6 @@ if __name__ == "__main__":
     lines = [line.strip() for line in deps_comment["body"].split("\n")[1:]]
     for line in lines:
         try:
-            print(line)
-            print(line.split(" "))
             # The expected format is "use <component name> <repo> <branch>
             # Where:
             # component name is something like 'jitsi-videobridge' or 'jicofo'
