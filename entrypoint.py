@@ -121,28 +121,13 @@ if __name__ == "__main__":
     comments = get_pr_comments(comments_url)
     info(f"got comments {json.dumps(comments)}")
 
-    pr_comment = event.get("issue", {}).get("pull_request", None)
-    if pr_comment == None:
-        info("Event is not a PR comment")
-        # TODO: this should just be a 'quit', not a fail or success.  Is this right?
-        sys.exit(0)
+    deps_comment = next((comment for comment in comments if comment["author_association"] == "OWNER" and comment["body"].startswith("deps:")), "")
 
-    comment_body = event.get("comment").get("body")
-    info(f"Parsed comment body '{comment_body}'")
-    # TEMP - hard code comment body to test
-    comment_body = """deps:
-    use jitsi-utils jitsi/jitsi-utils master
-    use jitsi-videobridge jitsi/jitsi-videobridge master
-    """
-    # END TEMP
-
-    if not comment_body.startswith("deps"):
-        info("Not a deps comment, ignoring")
-        sys.exit(0)
+    info("Found deps comment: {}".format(deps_comment["body"]))
 
     overridden_components = dict()
     # Separate each line, ignoring the first one ('deps:')
-    lines = [line.strip() for line in comment_body.split("\n")[1:]]
+    lines = [line.strip() for line in deps_comment["body"].split("\n")[1:]]
     for line in lines:
         try:
             print(line)
