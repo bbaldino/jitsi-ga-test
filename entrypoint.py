@@ -153,9 +153,13 @@ if __name__ == "__main__":
     pr = retrieve_pr(event)
     pr_body = pr["body"]
     info(f"Got pr body '{pr_body}'")
-    deps = pr_body.split("deps:")[1]
-    info(f"Got deps string: '{deps}'")
-    components = parse_deps(deps)
+    try:
+        deps = pr_body.split("deps:")[1]
+        info(f"Got deps string: '{deps}'")
+        components = parse_deps(deps)
+    except IndexError:
+        info("No deps specified")
+        components = dict()
 
     # Add the code in this PR to the list of components to build
     repo = pr["head"]["repo"]["full_name"]
