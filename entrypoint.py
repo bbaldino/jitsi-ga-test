@@ -23,8 +23,8 @@ def checkout_component(component_name, repo, branch_name, checkout_dir):
     info(f"Checking out branch '{branch_name}' from repo '{repo}' for component '{component_name}'")
     git.Repo.clone_from(f"https://github.com/{repo}.git", os.path.join(checkout_dir, component_name), branch=branch_name, depth=1)
 
-def checkout_overridden_components(overridden_components):
-    for (component, (repo, branch)) in overridden_components.items():
+def checkout_components(components):
+    for (component, (repo, branch)) in components.items():
         checkout_component(component, repo, branch, ".")
 
 def update_maven_deps(overridden_versions, component_dir: str) -> None:
@@ -64,26 +64,26 @@ def build_component(component_dir: str, overridden_versions) -> str:
 # Build the component for this PR, but first build any other overridden components
 # and use them.  We need to build the components in a specific order such that
 # dependencies are built before the components that use them
-def build_components(overridden_components):
+def build_components(components):
     os.mkdir("logs")
     overridden_versions = dict()
-    if "jitsi-utils" in overridden_components:
+    if "jitsi-utils" in components:
         info("Building jitsi-utils")
         jitsi_utils_version = build_component("./jitsi-utils", overridden_versions)
         overridden_versions["jitsi-utils"] = jitsi_utils_version
-    if "jicoco" in overridden_components:
+    if "jicoco" in components:
         info("Building jicoco")
         jicoco_version = build_component("./jicoco", overridden_versions)
         overridden_versions["jicoco"] = jicoco_version
-    if "rtp" in overridden_components:
+    if "rtp" in components:
         info("Building rtp")
         rtp_version = build_component("./rtp", overridden_versions)
         overridden_versions["rtp"] = rtp_version
-    if "jitsi-media-transform" in overridden_components:
+    if "jitsi-media-transform" in components:
         info("Building jitsi-media-transform")
         jmt_version = build_component("./jitsi-media-transform", overridden_versions)
         overridden_versions["jitsi-media-transform"] = jmt_version
-    if "jitsi-videobridge" in overridden_components:
+    if "jitsi-videobridge" in components:
         info("Building jitsi-videobridge")
         build_component("./jitsi-videobridge", overridden_versions)
     # TODO: jitsi-metaconfig
@@ -114,9 +114,9 @@ def get_pr_comments(url: str) -> dict:
     comments_resp.raise_for_status()
     return comments_resp.json()
 
-def retrieve_pr_body(event: dict) -> dict:
+def retrieve_pr(event: dict) -> dict:
     if event["action"] in [ "synchronize", "opened", "edited" ]:
-        return load_pr(event["pull_request"]["_links"]["self"]["href"])["body"]
+        return load_pr(event["pull_request"]["_links"]["self"]["href"])
     else:
         info("Unhandled event action type: {}".format(event["action"]))
         sys.exit(1)
@@ -154,17 +154,18 @@ if __name__ == "__main__":
         "Content-Type": "application/json"
     }
 
-    pr_body = retrieve_pr_body(event)
+    pr = retrieve_pr(event)
+    pr_body = pr["body"]
     info(f"Got pr body '{pr_body}'")
     deps = pr_body.split("deps:")[1]
     info(f"Got deps string: '{deps}'")
-    overridden_components = parse_deps(deps)
+    components = parse_deps(deps)
 
-    checkout_overridden_components(overridden_components)
-    build_components(overridden_components)
-    # TODO: build _this_ code
-    # we can get the clone url and the branch name from the event, then run checkout
-    # then we need to run update_maven_deps (need access to the overridden versions)
-    # then we can build
+    # Add the code in this PR to the list of components to build
+    repo = pr["head"]["repo"]["full_name"]
+    component_name = pr["head"]["repo"]["name"]
+    branch_name = pr["head"]["ref"]
+    components[component_name] = (repo, branch_name)
 
-
+    checkout_components(components)
+    build_components(components)
