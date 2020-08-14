@@ -126,7 +126,7 @@ def retrieve_pr(event: dict) -> dict:
 #   branch is the branch name to be checked out from that repo
 def parse_deps(deps: str) -> dict:
     overridden_components = dict()
-    lines = [line.strip() for line in deps.split("\n") if line]
+    lines = [line.strip() for line in deps.split("\n") if line.strip()]
     for line in lines:
         try:
             (_, component, repo, branch) = line.split(" ")
