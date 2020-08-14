@@ -9,6 +9,17 @@ from contextlib import redirect_stdout
 import git
 import requests
 
+# Lists all the known components and the order in which they should be built
+COMPONENTS_BUILD_ORDER = [
+    "jitsi-utils",
+    "jitsi-metaconfig",
+    "jicoco",
+    "rtp",
+    "jitsi-media-transform",
+    "jitsi-videobridge",
+    "jicofo"
+]
+
 def error(msg: str) -> None:
     print(f"[error]: {msg}", flush=True)
 
@@ -61,33 +72,18 @@ def build_component(component_dir: str, overridden_versions) -> str:
                 fail(f"Error building {component_dir}")
             return get_component_version(component_dir)
 
-# Build the component for this PR, but first build any other overridden components
-# and use them.  We need to build the components in a specific order such that
-# dependencies are built before the components that use them
+# Build the components for this PR in the proper order (according to COMPONENTS_BUILD_ORDER)
 def build_components(components):
     os.mkdir("logs")
     overridden_versions = dict()
-    if "jitsi-utils" in components:
-        info("Building jitsi-utils")
-        jitsi_utils_version = build_component("./jitsi-utils", overridden_versions)
-        overridden_versions["jitsi-utils"] = jitsi_utils_version
-    if "jicoco" in components:
-        info("Building jicoco")
-        jicoco_version = build_component("./jicoco", overridden_versions)
-        overridden_versions["jicoco"] = jicoco_version
-    if "rtp" in components:
-        info("Building rtp")
-        rtp_version = build_component("./rtp", overridden_versions)
-        overridden_versions["rtp"] = rtp_version
-    if "jitsi-media-transform" in components:
-        info("Building jitsi-media-transform")
-        jmt_version = build_component("./jitsi-media-transform", overridden_versions)
-        overridden_versions["jitsi-media-transform"] = jmt_version
-    if "jitsi-videobridge" in components:
-        info("Building jitsi-videobridge")
-        build_component("./jitsi-videobridge", overridden_versions)
-    # TODO: jitsi-metaconfig
-    # TODO: log a warning if there's a component we don't recognize
+    try:
+        build_order = sorted(components.keys(), key = lambda component_name: COMPONENTS_BUILD_ORDER.index(component_name))
+    except ValueError as e:
+        fail(f"Unrecognized component: {e}")
+    for component in build_order:
+        info(f"Building {component}")
+        version = build_component(f"./{component}", overridden_versions)
+        overridden_versions[component] = version
 
 def load_pr(url: str) -> dict:
     info("Retrieving PR information")
