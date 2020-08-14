@@ -104,7 +104,6 @@ def get_pr_comments(url: str) -> dict:
         url,
         headers={
             **GH_REQUEST_HEADERS,
-            # TODO: need accept type?
         }
     )
     comments_resp.raise_for_status()
