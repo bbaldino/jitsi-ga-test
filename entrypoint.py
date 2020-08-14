@@ -71,11 +71,23 @@ def build_components(overridden_components):
         info("Building jitsi-utils")
         jitsi_utils_version = build_component("./jitsi-utils", overridden_versions)
         overridden_versions["jitsi-utils"] = jitsi_utils_version
-    # others....
+    if "jicoco" in overridden_components:
+        info("Building jicoco")
+        jicoco_version = build_component("./jicoco", overridden_versions)
+        overridden_versions["jicoco"] = jicoco_version
+    if "rtp" in overridden_components:
+        info("Building rtp")
+        rtp_version = build_component("./rtp", overridden_versions)
+        overridden_versions["rtp"] = rtp_version
+    if "jitsi-media-transform" in overridden_components:
+        info("Building jitsi-media-transform")
+        jmt_version = build_component("./jitsi-media-transform", overridden_versions)
+        overridden_versions["jitsi-media-transform"] = jmt_version
     if "jitsi-videobridge" in overridden_components:
         info("Building jitsi-videobridge")
         build_component("./jitsi-videobridge", overridden_versions)
-
+    # TODO: jitsi-metaconfig
+    # TODO: log a warning if there's a component we don't recognize
 
 def load_pr(url: str) -> dict:
     info("Retrieving PR information")
@@ -102,15 +114,33 @@ def get_pr_comments(url: str) -> dict:
     comments_resp.raise_for_status()
     return comments_resp.json()
 
-def retrieve_pr_comments(event: dict) -> dict:
-    if event["action"] == "synchronize":
-        return get_pr_comments(event["pull_request"]["_links"]["comments"]["href"])
+def retrieve_pr_body(event: dict) -> dict:
+    if event["action"] in ["synchronize", "opened"]:
+        return load_pr(event["pull_request"]["_links"]["self"]["href"])["body"]
     elif event["action"] == "edited":
-        pr = load_pr(event["issue"]["pull_request"]["url"])
-        return get_pr_comments(pr["comments_url"])
+        return load_pr(event["issue"]["pull_request"]["url"])["body"]
     else:
         info("Unhandled event action type: {}".format(event["action"]))
-        return dict()
+        sys.exit(1)
+
+# The expected input string are the deps lines after the 'deps:' prefix.  Each dep
+# line must be formatted like so:
+#   use <component name> <repo> <branch>
+# Where:
+#   component name is a the name of a jitsi component repo (e.g. jitsi-videobridge, jitsi-utils, etc.)
+#   repo is the 'path' to a github repo to be used for that component (e.g. bbaldino/jitsi-videobridge)
+#   branch is the branch name to be checked out from that repo
+def parse_deps(deps: str) -> dict:
+    overridden_components = dict()
+    lines = [line.strip() for line in deps.split("\n")]
+    for line in lines:
+        try:
+            (_, component, repo, branch) = line.split(" ")
+            info(f"Will use branch {branch} from repo {repo} for component {component}")
+            overridden_components[component] = (repo, branch)
+        except ValueError as err:
+            info(f"invalid line: {err}")
+    return overridden_components
 
 if __name__ == "__main__":
     GITHUB_EVENT_PATH = os.environ["GITHUB_EVENT_PATH"]
@@ -126,37 +156,17 @@ if __name__ == "__main__":
         "Content-Type": "application/json"
     }
 
-    comments = retrieve_pr_comments(event)
-    info(f"got comments {json.dumps(comments)}")
-
-    deps_comment = next((comment for comment in comments if comment["author_association"] == "OWNER" and comment["body"].startswith("deps:")), "")
-
-    info("Found deps comment: {}".format(deps_comment["body"]))
-
-    overridden_components = dict()
-    # Separate each line, ignoring the first one ('deps:')
-    lines = [line.strip() for line in deps_comment["body"].split("\n")[1:]]
-    for line in lines:
-        try:
-            # The expected format is "use <component name> <repo> <branch>
-            # Where:
-            # component name is something like 'jitsi-videobridge' or 'jicofo'
-            # repo is owner/repo name, e.g.: 'bbaldino/jitsi-videobridge'
-            # branch is the branch name, e.g.: my_cool_feature
-            (_, component, repo, branch) = line.split(" ")
-            info(f"Will use branch {branch} from repo {repo} for component {component}")
-            overridden_components[component] = (repo, branch)
-        except ValueError as err:
-            info(f"invalid line: {err}")
+    pr_body = retrieve_pr_body(event)
+    info(f"Got pr body '{pr_body}'")
+    deps = pr_body.split("deps:")[1]
+    info(f"Got deps string: '{deps}'")
+    overridden_components = parse_deps(deps)
 
     checkout_overridden_components(overridden_components)
     build_components(overridden_components)
-    # We need to:
-    # build and install all components, in a specific order.  For now we'll support the jvb path, so this
-    #   order should work:
-    #   1) jitsi-utils
-    #   2) jicoco
-    #   3) rtp
-    #   4) jmt
-    #   5) jvb
+    # TODO: build _this_ code
+    # we can get the clone url and the branch name from the event, then run checkout
+    # then we need to run update_maven_deps (need access to the overridden versions)
+    # then we can build
+
 
