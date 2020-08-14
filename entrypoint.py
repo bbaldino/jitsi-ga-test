@@ -115,10 +115,8 @@ def get_pr_comments(url: str) -> dict:
     return comments_resp.json()
 
 def retrieve_pr_body(event: dict) -> dict:
-    if event["action"] in ["synchronize", "opened"]:
+    if event["action"] in [ "synchronize", "opened", "edited" ]:
         return load_pr(event["pull_request"]["_links"]["self"]["href"])["body"]
-    elif event["action"] == "edited":
-        return load_pr(event["issue"]["pull_request"]["url"])["body"]
     else:
         info("Unhandled event action type: {}".format(event["action"]))
         sys.exit(1)
